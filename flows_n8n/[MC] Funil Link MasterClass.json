@@ -1,0 +1,1215 @@
+{
+  "name": "[MC] Funil Link MasterClass",
+  "nodes": [
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "10sbF61bI2vT3V5IteelVei6_736_ceZPyWyPUwYpcs8",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Página1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/10sbF61bI2vT3V5IteelVei6_736_ceZPyWyPUwYpcs8/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "DATA",
+              "lookupValue": "={{ $now.toLocal().minus(1,'days').format('dd/MM/yyyy') }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        64,
+        -144
+      ],
+      "id": "ff2ca597-f02d-4e86-8a99-2a4969a09dbe",
+      "name": "Busca Cidade_Slug",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "dw5JAtYxTHfL1LHc",
+          "name": "Google Sheets - Intencional"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "queryString": "={{ $json.pasta }}",
+        "filter": {
+          "driveId": {
+            "mode": "list",
+            "value": "My Drive"
+          },
+          "folderId": {
+            "__rl": true,
+            "value": "1WBkN2jPJid5BflG42_Yeun7BULvljXsI",
+            "mode": "id"
+          }
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1088,
+        -48
+      ],
+      "id": "ff47f6d1-fa09-483f-a433-d879bf4d172b",
+      "name": "Encontra a Pasta do Mês",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "vL9g2sk8FPtEHEMV",
+          "name": "Google Drive - Intencional"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "function coleteCidadeDia (cidade, dia){\n  const partesData = dia.split(\"/\"); // [\"DD\",\"MM\",\"AA\"]\n  const diaMes = `${partesData[0]}.${partesData[1]}`;\n  const cidadeFormatada = cidade.replace(/\\s/g, \"\").toUpperCase();\n  const nome = `[${diaMes}][MC][${cidadeFormatada}]`;\n  \n  // ====== Construção do nome da pasta: \"M - MÊS - AAAA\" ======\n  const meses = {\n    \"01\": \"JANEIRO\", \"02\": \"FEVEREIRO\", \"03\": \"MARÇO\", \"04\": \"ABRIL\",\n    \"05\": \"MAIO\", \"06\": \"JUNHO\", \"07\": \"JULHO\", \"08\": \"AGOSTO\",\n    \"09\": \"SETEMBRO\", \"10\": \"OUTUBRO\", \"11\": \"NOVEMBRO\", \"12\": \"DEZEMBRO\"\n  };\n  const mesNumero = parseInt(partesData[1], 10);                 // \"08\" -> 8\n  const mesNome = meses[partesData[1]] || \"MÊS_DESCONHECIDO\";    // \"AGOSTO\"\n  const ano = partesData[2]?.length === 2 ? `20${partesData[2]}` // \"25\" -> \"2025\"\n                                          : (partesData[2] || \"\");\n  const pasta = `${mesNumero} - ${mesNome} - ${ano}`;\n\n  return { cidade, nome, pasta }\n}\n\n// Pega o item de entrada\nconst item = $input.first().json;\n\nconst { cidade, nome, pasta } = coleteCidadeDia(item['CIDADE SLUG'], item.DATA )\n\nreturn { cidade, nome, pasta };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        816,
+        -48
+      ],
+      "id": "4a01847d-9e10-4cdb-a41d-3d328ed893e6",
+      "name": "Separação Info"
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "queryString": "={{ $('Timer 1').item.json.DATA.slice(0, 6) + $('Timer 1').item.json.DATA.slice(8) }}",
+        "returnAll": true,
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "={{ $json.id }}",
+            "mode": "id"
+          }
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1632,
+        -48
+      ],
+      "id": "1e1ee3a0-9ad5-4fa1-be9d-2ad001e2053e",
+      "name": "Encontra a Pasta do Dia",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "vL9g2sk8FPtEHEMV",
+          "name": "Google Drive - Intencional"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "bf2492f3-fe48-4075-9c01-feebbe997ada",
+              "leftValue": "={{ $('Encontra a Pasta do Mês').first().json.id }}",
+              "rightValue": "={{ $json.dia }}",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1360,
+        -48
+      ],
+      "id": "020c9297-dd3e-4bb2-83b6-902c5d8459d5",
+      "name": "If - Existe pasta do Mês",
+      "executeOnce": false
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "queryString": "={{ $('Separação Info').item.json.nome }}",
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "={{ $json.id }}",
+            "mode": "id"
+          }
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        2224,
+        -48
+      ],
+      "id": "54f5a9bf-8a06-41f8-962d-3b53cd6a3c24",
+      "name": "Procura Planilha na pasta do Dia",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "vL9g2sk8FPtEHEMV",
+          "name": "Google Drive - Intencional"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "bf2492f3-fe48-4075-9c01-feebbe997ada",
+              "leftValue": "={{ $('Procura Planilha na pasta do Dia').first().json.id }}",
+              "rightValue": "={{ $json.dia }}",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2480,
+        -48
+      ],
+      "id": "47af492d-4f2d-4ea9-b928-20817ddc4d48",
+      "name": "If - Existe pasta do Evento",
+      "executeOnce": false
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "bf2492f3-fe48-4075-9c01-feebbe997ada",
+              "leftValue": "={{ $('Encontra a Pasta do Dia').first().json.id }}",
+              "rightValue": "={{ $json.dia }}",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1904,
+        -48
+      ],
+      "id": "4807df2f-e80e-4bba-b0f4-59aa46e505e1",
+      "name": "If - Existe pasta do Dia",
+      "executeOnce": false
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Página1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1SXjHStSH9OGimi7yWKUP-jh0YXW55mEzyXdklRdYamk/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        2768,
+        -64
+      ],
+      "id": "1821606c-9d74-4406-b7a5-0915ba4c1305",
+      "name": "Consultar Registro Planilha",
+      "retryOnFail": true,
+      "waitBetweenTries": 5000,
+      "alwaysOutputData": false,
+      "executeOnce": false,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "dw5JAtYxTHfL1LHc",
+          "name": "Google Sheets - Intencional"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "080fa409-35f2-4c18-abe0-5d190e50de94",
+              "leftValue": "={{ $('Consultar Registro Planilha').item.json.Nome.toString() }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "string",
+                "operation": "empty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "69092daa-55ec-4246-ab3a-07258e35cd73",
+              "leftValue": "={{ $('Consultar Registro Planilha').item.json.Whatsapp.toString() }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "empty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        3040,
+        -64
+      ],
+      "id": "a4327944-e54e-4bc3-9202-b44995638458",
+      "name": "Limpa as linhas erradas"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "080fa409-35f2-4c18-abe0-5d190e50de94",
+              "leftValue": "={{ $('Consultar Registro Planilha').item.json['Enviar Link'].trim() }}",
+              "rightValue": "X",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "69092daa-55ec-4246-ab3a-07258e35cd73",
+              "leftValue": "={{ $('Consultar Registro Planilha').item.json['Enviar Link'].trim() }}",
+              "rightValue": "x",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "2e5fa147-60c8-421b-b32b-bc8a7a362cd2",
+              "leftValue": "={{ $('Consultar Registro Planilha').item.json['Enviar Link'].trim() }}",
+              "rightValue": "Ok",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "df18345f-4c70-413b-b8c6-b5cf532e8712",
+              "leftValue": "={{ $('Consultar Registro Planilha').item.json['Enviar Link'].trim() }}",
+              "rightValue": "ok",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "7d82755c-0634-415a-ab78-26268c7ba388",
+              "leftValue": "={{ $('Consultar Registro Planilha').item.json['Enviar Link'].trim() }}",
+              "rightValue": "oK",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "6bf879d5-c2c5-4ff4-8e61-8742ce37194c",
+              "leftValue": "={{ $('Consultar Registro Planilha').item.json['Enviar Link'].trim() }}",
+              "rightValue": "OK",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        3344,
+        -48
+      ],
+      "id": "be679c24-2788-407d-a0b5-43cf1e2ee45c",
+      "name": "Verifica se deve enviar Link"
+    },
+    {
+      "parameters": {
+        "amount": 2
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        3632,
+        -64
+      ],
+      "id": "7e02be87-7371-4886-bb48-cc263cee607d",
+      "name": "Timer 2",
+      "webhookId": "614675f8-9aaa-4e62-9095-365022b2be5c"
+    },
+    {
+      "parameters": {
+        "amount": 3
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        576,
+        -48
+      ],
+      "id": "f79cf438-9137-405e-8826-5d39992927fa",
+      "name": "Timer 1",
+      "webhookId": "6d1f5645-3f0e-4bbc-8a25-2b230f120043"
+    },
+    {
+      "parameters": {
+        "resource": "custom",
+        "apiMethod": "crm.duplicate.findbycomm",
+        "fields": {
+          "values": [
+            {
+              "name": "entity_type",
+              "value": "CONTACT"
+            },
+            {
+              "name": "type",
+              "value": "PHONE"
+            },
+            {
+              "name": "values",
+              "value": "={{\n  (() => { \n    const t = $json.Whatsapp ?? '';\n    const digits = String(t).replace(/\\D/g,'');\n    const with55 = digits.startsWith('55') ? digits : '55' + digits; \n    return ['+' + with55, with55, with55.replace(/^55/, '')];\n  })()\n}}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-bitrix.bitrix",
+      "typeVersion": 1,
+      "position": [
+        4176,
+        -48
+      ],
+      "id": "30775533-2737-4346-9373-bef65683ab4d",
+      "name": "Busca Contato por Telefone",
+      "credentials": {
+        "bitrixOAuth2Api": {
+          "id": "Zreipv3RNu33NrvA",
+          "name": "Bitrix - Account IAM"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "f557e204-39e8-4483-94bc-512a06df2590",
+              "leftValue": "={{ $json.result.CONTACT }}",
+              "rightValue": "",
+              "operator": {
+                "type": "array",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        4416,
+        -48
+      ],
+      "id": "5c521755-1d2e-46f4-b68d-215eec9b27f7",
+      "name": "If - Possui contato na Bitrix"
+    },
+    {
+      "parameters": {
+        "operation": "list",
+        "parameters": {
+          "select": [
+            "ID",
+            "TITLE",
+            "CATEGORY_ID",
+            "STAGE_ID",
+            "CONTACT_ID",
+            "UF_CRM_1773691202"
+          ],
+          "filter": {
+            "property": [
+              {
+                "field": "CONTACT_ID",
+                "value": "={{ $json.result.CONTACT[0] }}"
+              },
+              {
+                "field": "CATEGORY_ID",
+                "value": "56"
+              },
+              {
+                "field": "UF_CRM_1773691202",
+                "operation": "!="
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-bitrix.bitrix",
+      "typeVersion": 1,
+      "position": [
+        4736,
+        -192
+      ],
+      "id": "af1a1cfd-4ec1-46d4-9a9e-cee6fdd23564",
+      "name": "Lista os Deals",
+      "credentials": {
+        "bitrixOAuth2Api": {
+          "id": "Zreipv3RNu33NrvA",
+          "name": "Bitrix - Account IAM"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "f557e204-39e8-4483-94bc-512a06df2590",
+              "leftValue": "={{ $json.result[0].ID }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "empty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        5072,
+        -192
+      ],
+      "id": "c89cfe34-9875-4cd3-af4e-44372ae2d5c2",
+      "name": "If - Possui negócio na Bitrix"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        3344,
+        -208
+      ],
+      "id": "66be0d92-8410-4ec0-bcae-f640f87346eb",
+      "name": "No Operation 1"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        320,
+        -144
+      ],
+      "id": "2155f993-dcda-41fb-b42e-f0b95185c566",
+      "name": "Loop - Eventos"
+    },
+    {
+      "parameters": {
+        "options": {
+          "reset": false
+        }
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        3904,
+        -64
+      ],
+      "id": "d39132d5-88b1-4fe9-ad32-a6c9c56a1c94",
+      "name": "Loop - Masterclass",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "resource": "crm.contact",
+        "fields": {
+          "values": [
+            {
+              "name": "NAME",
+              "value": "={{ $('Loop - Masterclass').first().json.Nome }}"
+            },
+            {
+              "name": "PHONE",
+              "value": "={{ (() => { const telefone = $('Loop - Masterclass').first().json.Whatsapp ?? ''; return [{\"VALUE\": \"+\" + telefone, \"VALUE_TYPE\": \"WORK\"}] })() }}"
+            },
+            {
+              "name": "EMAIL",
+              "value": "={{ (() => { const email = $('Loop - Masterclass').first().json.Email ?? ''; return [{\"VALUE\": email, \"VALUE_TYPE\": \"WORK\"}] })() }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-bitrix.bitrix",
+      "typeVersion": 1,
+      "position": [
+        4736,
+        128
+      ],
+      "id": "3f6299db-4083-4c5e-a441-65962cf4a3aa",
+      "name": "Cria Contato - Criação",
+      "credentials": {
+        "bitrixOAuth2Api": {
+          "id": "Zreipv3RNu33NrvA",
+          "name": "Bitrix - Account IAM"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fields": {
+          "values": [
+            {
+              "name": "TITLE",
+              "value": "={{ $('Loop - Masterclass').first().json.Nome }}"
+            },
+            {
+              "name": "CONTACT_ID",
+              "value": "={{ $('Cria Contato - Criação').first().json.result }}"
+            },
+            {
+              "name": "CATEGORY_ID",
+              "value": "=56"
+            },
+            {
+              "name": "STAGE_ID",
+              "value": "C56:NEW"
+            },
+            {
+              "name": "UF_CRM_1773691202",
+              "value": "={{ $('Separação Info').item.json.nome }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-bitrix.bitrix",
+      "typeVersion": 1,
+      "position": [
+        5088,
+        128
+      ],
+      "id": "1aa325c4-73f4-40a9-838b-8353b033849f",
+      "name": "Cria Negócio - Criação",
+      "credentials": {
+        "bitrixOAuth2Api": {
+          "id": "Zreipv3RNu33NrvA",
+          "name": "Bitrix - Account IAM"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "crm.contact",
+        "operation": "update",
+        "id": "={{ $('Busca Contato por Telefone').item.json.result.CONTACT[0] }}",
+        "fields": {
+          "values": [
+            {
+              "name": "NAME",
+              "value": "={{ $('Loop - Masterclass').item.json.Nome }}"
+            },
+            {
+              "name": "PHONE",
+              "value": "={{ (() => { const telefone = $('Loop - Masterclass').item.json.Whatsapp ?? ''; return [{\"VALUE\": \"+\" + telefone, \"VALUE_TYPE\": \"WORK\"}] })() }}"
+            },
+            {
+              "name": "EMAIL",
+              "value": "={{ (() => { const email = $('Loop - Masterclass').item.json.Email ?? ''; return [{\"VALUE\": email, \"VALUE_TYPE\": \"WORK\"}] })() }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-bitrix.bitrix",
+      "typeVersion": 1,
+      "position": [
+        5408,
+        -208
+      ],
+      "id": "74119cca-f581-4fd8-aaca-bcde59d29d9e",
+      "name": "Atualiza Contato - Atualização - Não Achou",
+      "credentials": {
+        "bitrixOAuth2Api": {
+          "id": "Zreipv3RNu33NrvA",
+          "name": "Bitrix - Account IAM"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fields": {
+          "values": [
+            {
+              "name": "TITLE",
+              "value": "={{ $('Loop - Masterclass').item.json.Nome }}"
+            },
+            {
+              "name": "CONTACT_ID",
+              "value": "={{ $('Busca Contato por Telefone').item.json.result.CONTACT[0] }}"
+            },
+            {
+              "name": "CATEGORY_ID",
+              "value": "=56"
+            },
+            {
+              "name": "STAGE_ID",
+              "value": "C56:NEW"
+            },
+            {
+              "name": "UF_CRM_1764868042",
+              "value": "={{ $('Separação Info').item.json.nome }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-bitrix.bitrix",
+      "typeVersion": 1,
+      "position": [
+        5728,
+        -208
+      ],
+      "id": "5785c8c2-ea9f-4483-ba44-36f046afdab1",
+      "name": "Cria Negócio - Atualização - Não Achou",
+      "credentials": {
+        "bitrixOAuth2Api": {
+          "id": "Zreipv3RNu33NrvA",
+          "name": "Bitrix - Account IAM"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        5408,
+        128
+      ],
+      "id": "4cdb674f-d46f-4344-9b6d-3f4fa2f6648e",
+      "name": "Continue"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        576,
+        -256
+      ],
+      "id": "d7e68491-3d53-4d00-9be8-f8de34d26146",
+      "name": "End"
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        3632,
+        128
+      ],
+      "id": "f798ca4b-52dd-4e13-ba1a-2097778c1e23",
+      "name": "Aggregate"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 0,6,12,23 * * *"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -176,
+        -144
+      ],
+      "id": "8e659570-6b3e-4091-8936-7f4681674d61",
+      "name": "Schedule Trigger"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Busca Cidade_Slug": {
+      "main": [
+        [
+          {
+            "node": "Loop - Eventos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Separação Info": {
+      "main": [
+        [
+          {
+            "node": "Encontra a Pasta do Mês",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Encontra a Pasta do Mês": {
+      "main": [
+        [
+          {
+            "node": "If - Existe pasta do Mês",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If - Existe pasta do Mês": {
+      "main": [
+        [
+          {
+            "node": "Encontra a Pasta do Dia",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop - Eventos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Encontra a Pasta do Dia": {
+      "main": [
+        [
+          {
+            "node": "If - Existe pasta do Dia",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Procura Planilha na pasta do Dia": {
+      "main": [
+        [
+          {
+            "node": "If - Existe pasta do Evento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If - Existe pasta do Evento": {
+      "main": [
+        [
+          {
+            "node": "Consultar Registro Planilha",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop - Eventos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If - Existe pasta do Dia": {
+      "main": [
+        [
+          {
+            "node": "Procura Planilha na pasta do Dia",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop - Eventos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Consultar Registro Planilha": {
+      "main": [
+        [
+          {
+            "node": "Limpa as linhas erradas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limpa as linhas erradas": {
+      "main": [
+        [
+          {
+            "node": "No Operation 1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Verifica se deve enviar Link",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verifica se deve enviar Link": {
+      "main": [
+        [
+          {
+            "node": "Timer 2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Timer 1": {
+      "main": [
+        [
+          {
+            "node": "Separação Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Timer 2": {
+      "main": [
+        [
+          {
+            "node": "Loop - Masterclass",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca Contato por Telefone": {
+      "main": [
+        [
+          {
+            "node": "If - Possui contato na Bitrix",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If - Possui contato na Bitrix": {
+      "main": [
+        [
+          {
+            "node": "Lista os Deals",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Cria Contato - Criação",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lista os Deals": {
+      "main": [
+        [
+          {
+            "node": "If - Possui negócio na Bitrix",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If - Possui negócio na Bitrix": {
+      "main": [
+        [
+          {
+            "node": "Atualiza Contato - Atualização - Não Achou",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Continue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop - Eventos": {
+      "main": [
+        [
+          {
+            "node": "End",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Timer 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop - Masterclass": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Busca Contato por Telefone",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cria Contato - Criação": {
+      "main": [
+        [
+          {
+            "node": "Cria Negócio - Criação",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cria Negócio - Criação": {
+      "main": [
+        [
+          {
+            "node": "Continue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Atualiza Contato - Atualização - Não Achou": {
+      "main": [
+        [
+          {
+            "node": "Cria Negócio - Atualização - Não Achou",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cria Negócio - Atualização - Não Achou": {
+      "main": [
+        [
+          {
+            "node": "Continue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Continue": {
+      "main": [
+        [
+          {
+            "node": "Loop - Masterclass",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "Loop - Eventos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Busca Cidade_Slug",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false,
+    "timeSavedMode": "fixed",
+    "timezone": "America/Sao_Paulo",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "c90b2743-beab-4a7b-8c7d-0b28e8434542",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "9f08f1c970e66f497fc785782417f76c5a8b06d8db2f04e44913d397126ffa5e"
+  },
+  "id": "SPdm82ei1_R3whfhBxidP",
+  "tags": []
+}
