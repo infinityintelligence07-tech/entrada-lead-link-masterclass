@@ -38,7 +38,7 @@ export class MasterclassOrchestratorService implements OnApplicationBootstrap {
     await this.runFlow('startup');
   }
 
-  @Cron('0 0,6,12,23 * * *', { timeZone: 'America/Sao_Paulo' })
+  @Cron('0 13,17,23 * * *', { timeZone: 'America/Sao_Paulo' })
   async handleCron(): Promise<void> {
     await this.runFlow('cron');
   }
