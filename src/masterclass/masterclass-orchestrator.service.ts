@@ -1,19 +1,19 @@
-import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
-import { Cron } from '@nestjs/schedule';
-import dayjs from 'dayjs';
-import timezone from 'dayjs/plugin/timezone';
-import utc from 'dayjs/plugin/utc';
-import { ConfigService } from '../config/config.service';
-import { sleep } from '../common/sleep';
-import { GoogleSheetsService } from '../integrations/google-sheets.service';
-import { GoogleDriveService } from '../integrations/google-drive.service';
-import { BitrixService } from '../integrations/bitrix.service';
+import { Injectable, Logger, OnApplicationBootstrap } from "@nestjs/common";
+import { Cron } from "@nestjs/schedule";
+import dayjs from "dayjs";
+import timezone from "dayjs/plugin/timezone";
+import utc from "dayjs/plugin/utc";
+import { ConfigService } from "../config/config.service";
+import { sleep } from "../common/sleep";
+import { GoogleSheetsService } from "../integrations/google-sheets.service";
+import { GoogleDriveService } from "../integrations/google-drive.service";
+import { BitrixService } from "../integrations/bitrix.service";
 import {
   formatEventInfo,
   shouldSendLink,
   shouldSkipWrongLine,
-} from './masterclass.utils';
-import { LeadRow } from './types/masterclass.types';
+} from "./masterclass.utils";
+import { LeadRow } from "./types/masterclass.types";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -21,7 +21,7 @@ dayjs.extend(timezone);
 @Injectable()
 export class MasterclassOrchestratorService implements OnApplicationBootstrap {
   private readonly logger = new Logger(MasterclassOrchestratorService.name);
-  private readonly leadsSheetTabName = 'Pagina1';
+  private readonly leadsSheetTabName = "Pagina1";
   private isFlowRunning = false;
 
   constructor(
@@ -33,21 +33,21 @@ export class MasterclassOrchestratorService implements OnApplicationBootstrap {
 
   async onApplicationBootstrap(): Promise<void> {
     this.logger.log(
-      'Aplicacao iniciada: executando fluxo inicial antes da janela da cron',
+      "Aplicacao iniciada: executando fluxo inicial antes da janela da cron",
     );
-    await this.runFlow('startup');
+    await this.runFlow("startup");
   }
 
-  @Cron('0 13,17,23 * * *', { timeZone: 'America/Sao_Paulo' })
+  @Cron("0 13,17,23 * * *", { timeZone: "America/Sao_Paulo" })
   async handleCron(): Promise<void> {
-    await this.runFlow('cron');
+    await this.runFlow("cron");
   }
 
   async executeFlow(): Promise<void> {
-    await this.runFlow('manual');
+    await this.runFlow("manual");
   }
 
-  private async runFlow(trigger: 'startup' | 'cron' | 'manual'): Promise<void> {
+  private async runFlow(trigger: "startup" | "cron" | "manual"): Promise<void> {
     if (this.isFlowRunning) {
       this.logger.warn(
         `Fluxo ja em execucao, nova chamada ignorada (origem=${trigger})`,
@@ -59,10 +59,12 @@ export class MasterclassOrchestratorService implements OnApplicationBootstrap {
     const startAt = Date.now();
     const eventDate = dayjs()
       .tz(this.config.values.tz)
-      .subtract(1, 'day')
-      .format('DD/MM/YYYY');
+      .subtract(1, "day")
+      .format("DD/MM/YYYY");
 
-    this.logger.log(`Iniciando funil para DATA=${eventDate} (origem=${trigger})`);
+    this.logger.log(
+      `Iniciando funil para DATA=${eventDate} (origem=${trigger})`,
+    );
 
     try {
       const eventRows = await this.googleSheets.getRowsByDate(
@@ -78,12 +80,12 @@ export class MasterclassOrchestratorService implements OnApplicationBootstrap {
       for (const event of eventRows) {
         await sleep(3000); // Replica o Timer 1
         try {
-          await this.processEvent(event['CIDADE SLUG'], event.DATA);
+          await this.processEvent(event["CIDADE SLUG"], event.DATA);
           processedEvents += 1;
         } catch (error) {
           failedEvents += 1;
           this.logger.error(
-            `Falha ao processar evento cidade=${event['CIDADE SLUG']} data=${event.DATA}`,
+            `Falha ao processar evento cidade=${event["CIDADE SLUG"]} data=${event.DATA}`,
             error as Error,
           );
         }
@@ -92,7 +94,7 @@ export class MasterclassOrchestratorService implements OnApplicationBootstrap {
         `Resumo dos eventos: processados=${processedEvents} falhas=${failedEvents}`,
       );
     } catch (error) {
-      this.logger.error('Erro no processamento do funil', error as Error);
+      this.logger.error("Erro no processamento do funil", error as Error);
     } finally {
       this.logger.log(
         `Fim do ciclo do funil (${Math.round((Date.now() - startAt) / 1000)}s)`,
@@ -147,7 +149,7 @@ export class MasterclassOrchestratorService implements OnApplicationBootstrap {
         skippedWrongLine += 1;
         continue;
       }
-      if (!shouldSendLink(lead['Enviar Link'])) {
+      if (!shouldSendLink(lead["Enviar Link"])) {
         skippedByRule += 1;
         continue;
       }
