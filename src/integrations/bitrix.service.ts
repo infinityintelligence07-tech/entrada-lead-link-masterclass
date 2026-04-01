@@ -106,6 +106,8 @@ export class BitrixService {
         CATEGORY_ID: this.config.values.bitrixCategoryId,
         STAGE_ID: this.config.values.bitrixStageId,
         [dealEventField]: eventName,
+        UF_CRM_1765898862: 708,
+        UF_CRM_1764868042: 530,
       },
     });
 
