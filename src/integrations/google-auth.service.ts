@@ -12,6 +12,7 @@ export class GoogleAuthService {
     const auth = new google.auth.OAuth2({
       clientId: this.config.values.googleClientId,
       clientSecret: this.config.values.googleClientSecret,
+      redirectUri: this.config.values.googleOauthRedirectUri,
     });
 
     auth.setCredentials({
